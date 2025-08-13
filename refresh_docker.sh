@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  refresh_docker.sh -n <name> [-b <build_context_dir>] [-d <compose_dir>]
+  refresh_docker.sh -n <name> [-b <build_context_dir>]
 
 Arguments:
   -n   Base name to derive container and image names from
@@ -15,11 +15,6 @@ Examples:
   refresh_docker.sh -n my_app
   refresh_docker.sh -n my_app -b ./app -d /mcp-docker/traefik-mcp
 
-  Environment overrides (optional):
-    IMAGE_REGISTRY   Registry host or namespace prefix (default: local)
-    IMAGE_NAMESPACE  Image namespace/owner         (default: apps)
-    IMAGE_TAG        Image tag                     (default: latest)
-    CONTAINER_PREFIX Container name prefix         (default: none)
 EOF
 }
 
@@ -31,7 +26,6 @@ while getopts ":n:b:d:h" opt; do
   case "$opt" in
     n) NAME="$OPTARG" ;;
     b) BUILD_CONTEXT="$OPTARG" ;;
-    d) COMPOSE_DIR="$OPTARG" ;;
     h) usage; exit 0 ;;
     \?) echo "Error: Invalid option -$OPTARG" >&2; usage; exit 1 ;;
     :) echo "Error: Option -$OPTARG requires an argument." >&2; usage; exit 1 ;;
@@ -41,8 +35,8 @@ done
 IMAGE="mcp-${NAME}"
 CONTAINER="${NAME}-container"
 
-if [[ -z "${CONTAINER}" || -z "${IMAGE}" ]]; then
-  echo "Error: Both -c <container> and -i <image> are required." >&2
+if [[ -z "${NAME}" ]]; then
+  echo "Error: -n <name> is required." >&2
   usage
   exit 1
 fi
@@ -104,7 +98,7 @@ echo
 echo "=== 6) Restart services with Docker Compose ==="
 if [[ -d "${COMPOSE_DIR}" ]]; then
   pushd "${COMPOSE_DIR}" >/dev/null
-  docker compose up -d
+  docker compose up -d "${NAME}"
   popd >/dev/null
 else
   echo "Warning: Compose directory '${COMPOSE_DIR}' not found. Skipping docker compose up -d."
